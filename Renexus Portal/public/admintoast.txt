@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #121212; color: white; }
+    .auth-box {
+      max-width: 450px;
+      margin: 100px auto;
+      background: #1f1f1f;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px #000;
+    }
+    #msg {
+      font-weight: 600;
+      font-size: 1rem;
+      min-height: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <h3 class="text-center mb-4">Sign Up</h3>
+    <form id="signup-form" novalidate>
+      <input type="text" id="name" class="form-control mb-3" placeholder="Full Name" required />
+      <input type="email" id="email" class="form-control mb-3" placeholder="Email" required />
+      <div class="input-group mb-3">
+        <input type="password" id="password" class="form-control" placeholder="Password" required />
+        <button type="button" class="btn btn-outline-light" id="toggle-password-btn">Show</button>
+      </div>
+      <select class="form-control mb-3" id="role" required>
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button type="submit" class="btn btn-success w-100">Register</button>
+    </form>
+
+    <!-- <!- Link to Login page -->
+    <p class="text-center mt-3">
+      Already have an account? <a href="login.html" class="text-info">Login here</a>
+    </p>
+
+    <p id="msg" class="text-center text-danger mt-3"></p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const form = document.getElementById("signup-form");
+    const msg = document.getElementById("msg");
+    const passwordInput = document.getElementById("password");
+    const toggleBtn = document.getElementById("toggle-password-btn");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.textContent = isPassword ? "Hide" : "Show";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const name = form.name.value.trim();
+      const email = form.email.value.trim();
+      const password = form.password.value.trim();
+      const role = form.role.value;
+
+      try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = result.user.uid;
+
+        await setDoc(doc(db, "users", uid), { uid, name, email, role });
+
+        alert("Signup Successful! Now login.");
+        window.location.href = "login.html";
+      } catch (err) {
+        msg.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html> 

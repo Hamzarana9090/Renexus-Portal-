@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #121212; color: white; }
+    .auth-box {
+      max-width: 400px;
+      margin: 100px auto;
+      background: #1f1f1f;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px #000;
+    }
+    #msg {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <h3 class="text-center mb-4">Login</h3>
+    <form id="login-form" novalidate>
+      <input type="email" id="email" class="form-control mb-3" placeholder="Email" required />
+      <div class="input-group mb-3">
+        <input type="password" id="password" class="form-control" placeholder="Password" required />
+        <button class="btn btn-outline-light" type="button" id="toggle-password">Show</button>
+      </div>
+     <p class="text-center mt-3">
+  Don't have an account? <a href="signup.html" class="text-info">Sign Up here</a>
+</p>
+
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+    <p id="msg" class="text-danger text-center mt-3"></p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const form = document.getElementById("login-form");
+    const msg = document.getElementById("msg");
+    const passwordInput = document.getElementById("password");
+    const toggleBtn = document.getElementById("toggle-password");
+
+    toggleBtn.addEventListener("click", () => {
+      const type = passwordInput.type === "password" ? "text" : "password";
+      passwordInput.type = type;
+      toggleBtn.textContent = type === "password" ? "Show" : "Hide";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const email = form.email.value.trim();
+      const password = form.password.value.trim();
+
+      try {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        const uid = result.user.uid;
+        const userDoc = await getDoc(doc(db, "users", uid));
+        const role = userDoc.data()?.role;
+
+        alert("✅ Login Successful!");
+
+        if (role === "admin") {
+          window.location.href = "admin-dashboard.html";
+        } else {
+          window.location.href = "user-dashboard.html";
+        }
+      } catch (err) {
+        msg.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daily Check-In & Check-Out</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #121212; color: white; }
+    .box { max-width: 400px; margin: 100px auto; padding: 30px; background: #1f1f1f; border-radius: 15px; }
+  </style>
+</head>
+<body>
+  <div class="box text-center">
+    <h3>Welcome!</h3>
+    <p id="status" class="mb-3">Today's Attendance Status</p>
+    <button class="btn btn-success w-100 mb-2" onclick="checkIn()">✅ Check In</button>
+    <button class="btn btn-warning w-100 mb-2" onclick="checkOut()">🔁 Check Out</button>
+    <p id="msg" class="mt-3 text-info"></p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import {
+      doc, getDoc, setDoc, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const msg = document.getElementById("msg");
+    const status = document.getElementById("status");
+
+    // Get today's date in yyyy-mm-dd format
+    const today = new Date().toISOString().split("T")[0];
+
+    // Show current status (if already checked in or out)
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const uid = user.uid;
+        const docRef = doc(db, "attendance", `${uid}_${today}`);
+        const snap = await getDoc(docRef);
+
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.checkOutTime) {
+            status.innerText = `✅ Checked in at ${data.checkInTime} and out at ${data.checkOutTime}`;
+          } else {
+            status.innerText = `✅ Checked in at ${data.checkInTime}, not yet checked out`;
+          }
+        } else {
+          status.innerText = "❌ Not checked in today.";
+        }
+      } else {
+        alert("Please login first.");
+        window.location.href = "login.html";
+      }
+    });
+
+    // Check-In Function
+    window.checkIn = async () => {
+      const user = auth.currentUser;
+      const uid = user.uid;
+      const time = new Date().toLocaleTimeString();
+      const docRef = doc(db, "attendance", `${uid}_${today}`);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        msg.textContent = "🟡 Already checked in today.";
+      } else {
+        await setDoc(docRef, {
+          uid,
+          date: today,
+          checkInTime: time,
+          checkOutTime: ""
+        });
+        msg.textContent = "✅ Checked in successfully!";
+        status.textContent = `✅ Checked in at ${time}`;
+      }
+    };
+
+    // Check-Out Function
+    window.checkOut = async () => {
+      const user = auth.currentUser;
+      const uid = user.uid;
+      const time = new Date().toLocaleTimeString();
+      const docRef = doc(db, "attendance", `${uid}_${today}`);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.checkOutTime) {
+          msg.textContent = "🟠 Already checked out today.";
+        } else {
+          await updateDoc(docRef, {
+            checkOutTime: time
+          });
+          msg.textContent = "🔁 Checked out successfully!";
+          status.textContent = `✅ Checked in at ${data.checkInTime} and out at ${time}`;
+        }
+      } else {
+        msg.textContent = "❌ You must check in first.";
+      }
+    };
+  </script>
+</body>
+</html>
